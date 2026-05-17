@@ -1,14 +1,57 @@
-const User = require("../../../modules/auth/models/user");
+const Customer = require("../models/customer");
 
+
+const createCustomer = async (req, res) => {
+  try {
+    const { name, email, address } = req.body;
+
+    // validation
+    if (!name || !email ) {
+      return res.status(400).json({
+        message: "All fields are required",
+      });
+    }
+
+    // check existing user
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingCustomer = await Customer.findOne({ email: normalizedEmail });
+
+    if (existingCustomer) {
+      return res.status(400).json({
+        message: "Customer already exists",
+      });
+    }
+
+  
+    const customer = await Customer.create({
+      name,
+      email: normalizedEmail,
+      address,
+    });
+
+    res.status(201).json({
+      message: "customer has been created successfully",
+      customer: {
+        id: customer._id,
+        name: customer.name,
+        email: customer.email,
+        address: customer.address,
+        role: customer.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
 
 const getCustomers = async (req, res) => {
   try {
-    const users = await User.find()
-      .select("-password")
-      .select({role: "customer"})
+    const customers = await Customer.find()
       .sort({ createdAt: -1 });
 
-    res.status(200).json(users);
+    res.status(200).json(customers);
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -18,42 +61,50 @@ const getCustomers = async (req, res) => {
 
 const updateCustomer = async (req, res) => {
   try {
-    const { role, unlockAccount } = req.body;
+    const { name, email, address } = req.body;
 
-    const user = await User.findOne({_id :req.params.id, role:"customer"});
+    const customer = await Customer.findById(req.params.id);
 
-    if (!user) {
+    if (!customer) {
       return res.status(404).json({
         message: "customer not found",
       });
     }
 
-    if (role) {
-      if (![ "customer"].includes(role)) {
+    if (name) {
+      customer.name = name;
+    }
+
+    if (email) {
+      const normalizedEmail = email.trim().toLowerCase();
+      const existingCustomer = await Customer.findOne({
+        email: normalizedEmail,
+        _id: { $ne: customer._id },
+      });
+
+      if (existingCustomer) {
         return res.status(400).json({
-          message: "Invalid role",
+          message: "Customer email already exists",
         });
       }
 
-      user.role = role;
+      customer.email = normalizedEmail;
     }
 
-    if (unlockAccount) {
-      user.loginAttempts = 0;
-      user.lockUntil = null;
+    if (address !== undefined) {
+      customer.address = address;
     }
 
-    await user.save();
+    await customer.save();
 
     res.status(200).json({
       message: "customer updated successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        loginAttempts: user.loginAttempts,
-        lockUntil: user.lockUntil,
+      customer: {
+        id: customer._id,
+        name: customer.name,
+        email: customer.email,
+        address: customer.address,
+        role: customer.role,
       },
     });
   } catch (error) {
@@ -65,21 +116,15 @@ const updateCustomer = async (req, res) => {
 
 const deleteCustomer = async (req, res) => {
   try {
-    if (req.user._id.toString() === req.params.id) {
-      return res.status(400).json({
-        message: "You cannot delete your own account",
-      });
-    }
+    const customer = await Customer.findById(req.params.id);
 
-  const user = await User.findOne({_id :req.params.id, role:"customer"});
-
-    if (!user) {
+    if (!customer) {
       return res.status(404).json({
         message: "customer not found",
       });
     }
 
-    await user.deleteOne();
+    await customer.deleteOne();
 
     res.status(200).json({
       message: "customer deleted successfully",
@@ -92,4 +137,4 @@ const deleteCustomer = async (req, res) => {
 };
 
 
-module.exports = {getCustomers, updateCustomer, deleteCustomer}
+module.exports = {getCustomers, updateCustomer, deleteCustomer, createCustomer}

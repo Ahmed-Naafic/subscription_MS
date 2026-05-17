@@ -58,13 +58,6 @@ const loginUser = async (req, res) => {
 
     // validation
     if (!email || !password) {
-      await auditLogin({
-        req,
-        email: normalizedEmail || "unknown",
-        status: "failed",
-        reason: "missing_fields",
-      });
-
       return res.status(400).json({
         message: "All fields are required",
       });
@@ -104,7 +97,6 @@ const loginUser = async (req, res) => {
       // lock account after 3 failed attempts
       if (user.loginAttempts >= 3) {
         user.lockUntil = Date.now() + 3 * 60 * 1000;
-        reason = "account_locked_after_failed_attempts";
       }
 
       await user.save();

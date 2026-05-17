@@ -28,7 +28,7 @@ const updateUser = async (req, res) => {
     }
 
     if (role) {
-      if (!["admin", "customer"].includes(role)) {
+      if (!["admin", "customer", "salesAgent"].includes(role)) {
         return res.status(400).json({
           message: "Invalid role",
         });

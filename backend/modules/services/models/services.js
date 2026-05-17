@@ -10,8 +10,6 @@ const serviceSchema = new mongoose.Schema(
 
         description:{
             type:String,
-            required:true,
-            unique:true,
             lowercase:true,
             trim:true
         },
@@ -19,6 +17,10 @@ const serviceSchema = new mongoose.Schema(
         isDeleted : {
             type:Boolean,
             default:false,
+        },
+
+        deletedAt:{
+            type:Date,
         }
     
      

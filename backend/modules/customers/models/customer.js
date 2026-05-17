@@ -17,6 +17,7 @@ const customerSchema = new mongoose.Schema(
         },
         address:{
             type:String,
+            trim:true
         },
 
         role:{

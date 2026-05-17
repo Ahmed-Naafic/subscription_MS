@@ -1,4 +1,4 @@
-const Service = require("../models/services.js");
+const Service = require("../models/services");
 
 const createService = async (req,res)=>{
     try {
@@ -10,14 +10,17 @@ const createService = async (req,res)=>{
             })
         }
 
-        //check existing category
-        const existingService = await Service.findOne({name});
+        const existingService = await Service.findOne({
+            name: name.trim(),
+            isDeleted: false,
+        });
 
-        if (existinService) {
+        if (existingService) {
             return res.status(400).json({
-                message : "the service is already exist"
+                message : "the service already exists"
             })
         }
+
 
         const service = await Service.create({
             name,
@@ -26,7 +29,7 @@ const createService = async (req,res)=>{
 
         res.status(201).json({
             message : "the Service has been created",
-            category
+            service
         })
 
     } catch (error) {
@@ -59,7 +62,10 @@ const getService = async (req,res)=>{
 
 const getSingleService =async (req,res)=>{
     try {
-        const service = await Service.findById(req.params.id);
+        const service = await Service.findOne({
+            _id: req.params.id,
+            isDeleted: false,
+        });
 
         if (!service) {
             return res.status(400).json({
@@ -86,11 +92,25 @@ const updateService = async (req,res)=>{
             })
         }
 
+        if (req.body.name) {
+            const existingService = await Service.findOne({
+                name: req.body.name.trim(),
+                isDeleted: false,
+                _id: { $ne: service._id },
+            });
+
+            if (existingService) {
+                return res.status(400).json({
+                    message : "the service already exists"
+                })
+            }
+        }
+
         const updatedService = await Service.findByIdAndUpdate(req.params.id, req.body , {new:true, runValidators:true})
 
         res.status(200).json({
-            message : "category updated successfully",
-            category : updatedService
+            message : "service updated successfully",
+            service : updatedService
         })
         
     } catch (error) {
@@ -112,7 +132,7 @@ const deleteService = async (req, res) => {
     // check product exists
     if (!service || service.isDeleted) {
       return res.status(404).json({
-        message: "category not found",
+        message: "service not found",
       });
     }
 
